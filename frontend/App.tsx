@@ -21,9 +21,7 @@ type UserRole = 'Director' | 'Administrativo';
 type View = 'dashboard' | 'students' | 'graduates';
 // ¡CAMBIO IMPORTANTE! Apunta a la URL de producción de Render.
 // Reemplaza 'https://gestor-escolar-api.onrender.com' con la URL real de tu backend.
-// FIX: Cast `import.meta` to `any` to resolve TypeScript error regarding missing 'env' property.
-// This is necessary because the Vite client type definitions are not available in this context.
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'https://gestor-escolar-api.onrender.com/api';
+const API_URL = 'https://gestor-escolar-api.onrender.com/api';
 
 const DriveConnectScreen: React.FC<{ onConnect: () => void }> = ({ onConnect }) => (
     <div className="flex items-center justify-center h-screen bg-slate-900 text-slate-200">
