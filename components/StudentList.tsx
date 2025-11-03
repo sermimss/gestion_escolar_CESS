@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Student } from '../types';
-import { UserIcon, BookOpenIcon } from './icons';
+import { UserIcon, BookOpenIcon, DownloadIcon } from './icons';
 
 interface StudentListProps {
   students: Student[];
@@ -28,6 +28,36 @@ const StudentList: React.FC<StudentListProps> = ({ students, selectedStudentId, 
     }
     return studentsByPlan[activeFilter] || [];
   }, [students, activeFilter, studentsByPlan]);
+
+  const handleDownloadStudentList = () => {
+    if (filteredStudents.length === 0) return;
+
+    const headers = ['Nombre Completo', 'CURP', 'Plan de Estudio', 'Fecha de Inscripción', 'Estatus'];
+    const csvRows = [headers.join(',')];
+
+    filteredStudents.forEach(student => {
+        const row = [
+            `"${student.name.replace(/"/g, '""')}"`,
+            student.curp,
+            student.studyPlan,
+            student.enrollmentDate,
+            student.status
+        ];
+        csvRows.push(row.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const filterName = activeFilter.replace(/ /g, '_');
+    link.setAttribute('download', `lista_alumnos_${filterName}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const FilterButton: React.FC<{ filterKey: string; label: string; count: number }> = ({ filterKey, label, count }) => (
     <button
@@ -58,9 +88,19 @@ const StudentList: React.FC<StudentListProps> = ({ students, selectedStudentId, 
         ))}
       </div>
       <div className="border-t border-slate-700 mt-2">
-          <h3 className="px-4 pt-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+        <div className="flex justify-between items-center px-4 pt-3 mb-1">
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
              Alumnos en: {activeFilter === 'todos' ? 'Todas las Carreras' : activeFilter}
           </h3>
+          <button
+              onClick={handleDownloadStudentList}
+              disabled={filteredStudents.length === 0}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+              <DownloadIcon className="w-4 h-4" />
+              Descargar
+          </button>
+        </div>
           {filteredStudents.length > 0 ? (
             <ul>
               {filteredStudents.map(student => (

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Student } from '../types';
-import { DollarSignIcon, UserIcon, ChartBarIcon } from './icons';
+import { DollarSignIcon, UserIcon, ChartBarIcon, BellIcon } from './icons';
 
 interface DashboardProps {
     students: Student[];
+    overdueStudentsCount: number;
 }
 
 const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; colorClass: string }> = ({ title, value, icon, colorClass }) => (
@@ -19,7 +20,7 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; 
 );
 
 
-const Dashboard: React.FC<DashboardProps> = ({ students }) => {
+const Dashboard: React.FC<DashboardProps> = ({ students, overdueStudentsCount }) => {
     
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
@@ -43,6 +44,20 @@ const Dashboard: React.FC<DashboardProps> = ({ students }) => {
                 </h2>
                 <p className="text-slate-400 mt-1">Una vista general del estado financiero de la escuela.</p>
             </header>
+
+            {overdueStudentsCount > 0 && (
+                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-4">
+                    <div className="p-2 bg-red-500/20 rounded-full">
+                        <BellIcon className="w-6 h-6 text-red-300" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-red-300">Alerta de Pagos Vencidos</h3>
+                        <p className="text-sm text-red-400">
+                            Hay <span className="font-bold">{overdueStudentsCount}</span> alumno(s) con uno o más pagos vencidos. Revisa las notificaciones para enviar recordatorios.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard title="Ingresos Esperados (Total)" value={formatCurrency(totalExpected)} icon={<DollarSignIcon className="w-7 h-7 text-white"/>} colorClass="bg-sky-500" />

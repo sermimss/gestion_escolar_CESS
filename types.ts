@@ -17,7 +17,9 @@ export enum PaymentType {
     ReEnrollment = 'Reinscripción',
     Monthly = 'Mensualidad',
     Weekly = 'Semanal',
-    SocialService = 'Servicio Social'
+    SocialService = 'Servicio Social',
+    Titulation = 'Titulación',
+    CompletionCertificate = 'Certificado de Término',
 }
 
 export interface Payment {
@@ -31,6 +33,18 @@ export interface Payment {
   paymentDate?: string;
   paymentMethod?: PaymentMethod;
   lateFeeApplied: number;
+}
+
+export interface Transaction {
+    id: string;
+    date: string;
+    amount: number;
+    method: PaymentMethod;
+    coveredPayments: {
+        paymentId: string;
+        description: string;
+        amountPaid: number;
+    }[];
 }
 
 export interface Certificate {
@@ -51,20 +65,52 @@ export interface StudentGroup {
     day?: 'Sábado' | 'Domingo';
 }
 
+export interface SubjectGrade {
+    subject: string;
+    grade: number;
+}
+
+export interface AcademicRecord {
+    period: string; // e.g., "Cuatrimestre 1", "Semana 1-9"
+    grades: SubjectGrade[];
+    gpa: number;
+}
+
+export interface DocumentationFile {
+    name: string;
+    url: string;
+    size: number;
+}
+
 export interface Student {
   id: string;
   name: string;
   curp: string;
   enrollmentDate: string;
   studyPlan: string;
-  group: StudentGroup;
+  group?: StudentGroup;
   hasScholarship: boolean;
-  secondaryCertificate: Certificate;
+  secondaryCertificate?: Certificate;
   highSchoolCertificate?: Certificate;
   workExperience?: WorkExperience;
   contact?: {
       phone: string;
       email: string;
   };
+  address?: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+  };
   payments: Payment[];
+  paymentHistory: Transaction[];
+  academicHistory: AcademicRecord[];
+  documentationFiles: DocumentationFile[];
+  graduationCompleted: boolean;
+  digitalCertificateDelivered: boolean;
+  status: 'Activo' | 'Egresado';
+  graduationYear?: number;
+  certificateReceived: boolean;
+  certificateFileUrl: string | null;
 }

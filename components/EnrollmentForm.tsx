@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from './icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { XMarkIcon, CloudArrowUpIcon, DocumentIcon } from './icons';
 
 interface EnrollmentFormProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (command: string) => void;
+    onSubmit: (command: string, files: File[]) => void;
     isLoading: boolean;
 }
 
@@ -27,14 +27,15 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
         name: '',
         curp: '',
         enrollmentDate: new Date().toISOString().split('T')[0],
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
         studyPlan: '',
         schedule: '',
         day: '',
         shift: '',
         hasScholarship: false,
-        secCertNum: '',
-        secCertGpa: '',
-        secCertInst: '',
         hsCertNum: '',
         hsCertGpa: '',
         hsCertInst: '',
@@ -42,6 +43,9 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
         workYears: '',
     });
 
+    const [files, setFiles] = useState<File[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [showsExtraFields, setShowsExtraFields] = useState(false);
 
     useEffect(() => {
@@ -49,6 +53,37 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
     }, [formData.studyPlan]);
 
     if (!isOpen) return null;
+
+    const handleFileChange = (selectedFiles: FileList | null) => {
+        if (selectedFiles) {
+            setFiles(prev => [...prev, ...Array.from(selectedFiles)]);
+        }
+    };
+    
+    const removeFile = (index: number) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+    
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileChange(e.dataTransfer.files);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -62,19 +97,18 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // Construir el comando en lenguaje natural desde el formulario
-        let command = `Inscribir a ${formData.name} (CURP: ${formData.curp}) en ${formData.studyPlan} en el grupo ${formData.schedule} ${formData.day} ${formData.shift}. Inicia el ${formData.enrollmentDate}.`;
+        let command = `Inscribir a ${formData.name} (CURP: ${formData.curp}) con domicilio en ${formData.street}, ${formData.city}, ${formData.state}, C.P. ${formData.zipCode}. Se inscribe en ${formData.studyPlan} en el grupo ${formData.schedule} ${formData.day} ${formData.shift}. Inicia el ${formData.enrollmentDate}.`;
         command += ` ${formData.hasScholarship ? 'Es' : 'No es'} trabajador de salud.`;
-        command += ` Certificado secundaria: #${formData.secCertNum}, Promedio: ${formData.secCertGpa}, Inst: ${formData.secCertInst}.`;
         if (showsExtraFields) {
             if(formData.hsCertNum) command += ` Certificado bachillerato: #${formData.hsCertNum}, Promedio: ${formData.hsCertGpa}, Inst: ${formData.hsCertInst}.`;
             if(formData.workInst) command += ` Experiencia: ${formData.workYears} años en ${formData.workInst}.`;
         }
-        onSubmit(command);
+        onSubmit(command, files);
     };
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <header className="flex items-center justify-between p-4 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">Inscribir Nuevo Alumno</h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-700">
@@ -88,6 +122,12 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                            <InputField label="Nombre Completo" name="name" value={formData.name} onChange={handleChange} required />
                            <InputField label="CURP" name="curp" value={formData.curp} onChange={handleChange} required />
+                        </div>
+                        <InputField label="Calle y Número" name="street" value={formData.street} onChange={handleChange} required />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <InputField label="Ciudad" name="city" value={formData.city} onChange={handleChange} required />
+                           <InputField label="Estado" name="state" value={formData.state} onChange={handleChange} required />
+                           <InputField label="Código Postal" name="zipCode" value={formData.zipCode} onChange={handleChange} required />
                         </div>
                     </fieldset>
                     
@@ -130,20 +170,11 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
                         </div>
                     </fieldset>
 
-                    {/* Sección Académica */}
+                    {/* Sección Académica Opcional */}
                     <fieldset className="space-y-4">
-                        <legend className="text-lg font-semibold text-sky-400 mb-2">Información Académica</legend>
-                        <div className="p-4 bg-slate-900/50 rounded-md space-y-4">
-                            <h4 className="font-semibold text-slate-200">Certificado de Secundaria</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <InputField label="Número de Cert." name="secCertNum" value={formData.secCertNum} onChange={handleChange} required />
-                                <InputField label="Promedio" name="secCertGpa" value={formData.secCertGpa} onChange={handleChange} type="number" required />
-                                <InputField label="Institución" name="secCertInst" value={formData.secCertInst} onChange={handleChange} required />
-                            </div>
-                        </div>
-
-                        {showsExtraFields && (
+                         {showsExtraFields && (
                             <>
+                                <legend className="text-lg font-semibold text-sky-400 mb-2">Información Adicional (Para Nivelación)</legend>
                                 <div className="p-4 bg-slate-900/50 rounded-md space-y-4">
                                     <h4 className="font-semibold text-slate-200">Certificado de Bachillerato (Opcional)</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -162,6 +193,52 @@ const EnrollmentForm: React.FC<EnrollmentFormProps> = ({ isOpen, onClose, onSubm
                             </>
                         )}
                     </fieldset>
+
+                     {/* Sección de Documentos */}
+                     <fieldset className="space-y-2">
+                        <legend className="text-lg font-semibold text-sky-400 mb-2">Documentación Escaneada</legend>
+                        <div 
+                            onDragEnter={handleDragEnter}
+                            onDragOver={handleDragEnter}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragging ? 'border-sky-500 bg-sky-500/10' : 'border-slate-600 hover:border-slate-500'}`}
+                        >
+                            <CloudArrowUpIcon className="w-12 h-12 mx-auto text-slate-500" />
+                            <p className="mt-2 text-sm text-slate-400">
+                                <span className="font-semibold text-sky-400">Haz clic para subir</span> o arrastra y suelta los archivos.
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">PDF, PNG, JPG (Max. 10MB por archivo)</p>
+                            <input 
+                                ref={fileInputRef}
+                                type="file" 
+                                multiple
+                                onChange={(e) => handleFileChange(e.target.files)}
+                                className="hidden"
+                                accept=".pdf,.png,.jpg,.jpeg"
+                            />
+                        </div>
+                        {files.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                <h4 className="text-sm font-medium text-slate-300">Archivos seleccionados:</h4>
+                                <ul className="space-y-2">
+                                    {files.map((file, index) => (
+                                        <li key={index} className="flex items-center justify-between bg-slate-700/50 p-2 rounded-md">
+                                            <div className="flex items-center gap-3">
+                                                <DocumentIcon className="w-5 h-5 text-slate-400" />
+                                                <span className="text-sm text-slate-200">{file.name}</span>
+                                                <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(2)} KB)</span>
+                                            </div>
+                                            <button type="button" onClick={() => removeFile(index)} className="p-1 text-slate-400 hover:text-red-400">
+                                                <XMarkIcon className="w-4 h-4" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                     </fieldset>
                 </form>
                 <footer className="p-4 bg-slate-800 border-t border-slate-700 mt-auto">
                     <div className="flex justify-end gap-3">
