@@ -21,7 +21,7 @@ type UserRole = 'Director' | 'Administrativo';
 type View = 'dashboard' | 'students' | 'graduates';
 // ¡CAMBIO IMPORTANTE! Apunta a la URL de producción de Render.
 // Reemplaza 'https://gestor-escolar-api.onrender.com' con la URL real de tu backend.
-const API_URL = 'https://gestor-escolar-api.onrender.com/api';
+const API_URL = 'https://gestion-escolar-cess.onrender.com/api';
 
 const DriveConnectScreen: React.FC<{ onConnect: () => void }> = ({ onConnect }) => (
     <div className="flex items-center justify-center h-screen bg-slate-900 text-slate-200">
