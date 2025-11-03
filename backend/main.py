@@ -1,3 +1,7 @@
+# main.py
+# ... otros imports
+
+# ... aquí va el resto de tu código de la API ...
 import os
 import uuid
 import json
@@ -16,6 +20,23 @@ from database import SessionLocal, engine, get_db
 models.Base.metadata.create_all(bind=engine)
 
 # Inicializa la aplicación FastAPI
+app = FastAPI()
+
+# Lista de orígenes permitidos. Añade aquí la URL que te dará Vercel.
+# Por ahora, podemos permitir todos para pruebas con "*"
+origins = [
+    "http://localhost:3000", # Para desarrollo local
+    "*" # Permite todos los orígenes (puedes restringirlo luego a tu URL de Vercel)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app = FastAPI(
     title="API del Sistema de Gestión Escolar",
     description="Backend para gestionar la base de datos de estudiantes.",
