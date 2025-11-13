@@ -90,7 +90,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student, onUpdateStuden
   const allPlanPaymentsCompleted = (regularTotalDue - regularTotalPaid) <= 0 && regularTotalDue > 0;
 
   const finalPayment = student.payments.find(p => p.type === PaymentType.Titulation || p.type === PaymentType.CompletionCertificate);
-  const finalPaymentExists = !!finalPayment;
+  const finalPaymentExists = Boolean(finalPayment);
   const finalPaymentPaid = finalPayment ? finalPayment.status === PaymentStatus.Paid : false;
 
   const canGraduate = allPlanPaymentsCompleted && student.graduationCompleted && finalPaymentPaid && student.certificateReceived;
