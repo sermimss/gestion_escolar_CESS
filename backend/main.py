@@ -2,7 +2,6 @@
 # ... otros imports
 
 # ... aquí va el resto de tu código de la API ...
-import os
 import uuid
 import json
 from typing import List, Optional
@@ -13,7 +12,7 @@ from sqlalchemy.orm import Session
 
 # Importaciones locales de los otros módulos del backend
 import crud, models, schemas
-from database import SessionLocal, engine, get_db
+from database import engine, get_db
 
 # Crea las tablas en la base de datos si no existen
 # Esto se ejecuta una sola vez al iniciar la aplicación
