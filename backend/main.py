@@ -1,18 +1,20 @@
 # main.py
 # ... otros imports
 
+import json
+
 # ... aquí va el resto de tu código de la API ...
 import uuid
-import json
 from typing import List, Optional
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+# Importaciones locales de los otros módulos del backend
+import crud
+import models
+import schemas
+from database import engine, get_db
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
-# Importaciones locales de los otros módulos del backend
-import crud, models, schemas
-from database import engine, get_db
 
 # Crea las tablas en la base de datos si no existen
 # Esto se ejecuta una sola vez al iniciar la aplicación
@@ -24,8 +26,9 @@ app = FastAPI()
 # Lista de orígenes permitidos. Añade aquí la URL que te dará Vercel.
 # Por ahora, podemos permitir todos para pruebas con "*"
 origins = [
-    "http://localhost:3000", # Para desarrollo local
-    "*" # Permite todos los orígenes (puedes restringirlo luego a tu URL de Vercel)
+    "http://localhost:3000",  # Para desarrollo local
+    # Permite todos los orígenes (puedes restringirlo luego a tu URL de Vercel)
+    "*",
 ]
 
 app.add_middleware(
@@ -39,7 +42,7 @@ app.add_middleware(
 app = FastAPI(
     title="API del Sistema de Gestión Escolar",
     description="Backend para gestionar la base de datos de estudiantes.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # --- Configuración de CORS ---
@@ -55,19 +58,20 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Para simplificar, se permite cualquier origen
+    allow_origins=["*"],  # Para simplificar, se permite cualquier origen
     allow_credentials=True,
-    allow_methods=["*"], # Permite todos los métodos HTTP (GET, POST, PUT, etc.)
-    allow_headers=["*"], # Permite todas las cabeceras HTTP
+    allow_methods=["*"],  # Permite todos los métodos HTTP (GET, POST, PUT, etc.)
+    allow_headers=["*"],  # Permite todas las cabeceras HTTP
 )
 
-
 # --- Definición de Endpoints de la API ---
+
 
 @app.get("/")
 def read_root():
     """Endpoint de prueba para verificar que la API está funcionando."""
     return {"message": "Bienvenido a la API del Gestor Escolar"}
+
 
 @app.post("/api/students", response_model=schemas.Student)
 def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)):
@@ -78,6 +82,7 @@ def create_student(student: schemas.StudentCreate, db: Session = Depends(get_db)
     # Llama a la función del CRUD para crear el estudiante en la base de datos
     return crud.create_student(db=db, student=student)
 
+
 @app.get("/api/students", response_model=List[schemas.Student])
 def read_students(skip: int = 0, limit: int = 200, db: Session = Depends(get_db)):
     """
@@ -86,6 +91,7 @@ def read_students(skip: int = 0, limit: int = 200, db: Session = Depends(get_db)
     """
     students = crud.get_students(db, skip=skip, limit=limit)
     return students
+
 
 @app.get("/api/students/{student_id}", response_model=schemas.Student)
 def read_student(student_id: str, db: Session = Depends(get_db)):
@@ -98,8 +104,13 @@ def read_student(student_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Student not found")
     return db_student
 
+
 @app.put("/api/students/{student_id}", response_model=schemas.Student)
-def update_student(student_id: str, student_update: schemas.StudentUpdate, db: Session = Depends(get_db)):
+def update_student(
+    student_id: str,
+    student_update: schemas.StudentUpdate,
+    db: Session = Depends(get_db),
+):
     """
     Endpoint para actualizar la información de un estudiante.
     Recibe los campos a actualizar en el cuerpo de la petición.
@@ -121,26 +132,32 @@ def update_student(student_id: str, student_update: schemas.StudentUpdate, db: S
                 db.add(new_payment)
         else:
             setattr(db_student, key, value)
-    
+
     db.commit()
     db.refresh(db_student)
     return db_student
 
+
 @app.post("/api/students/{student_id}/transactions", response_model=schemas.Student)
-def register_transaction(student_id: str, transaction_data: schemas.TransactionCreate, db: Session = Depends(get_db)):
+def register_transaction(
+    student_id: str,
+    transaction_data: schemas.TransactionCreate,
+    db: Session = Depends(get_db),
+):
     """
     Endpoint para registrar un nuevo pago (transacción) para un estudiante.
     """
     db_student = crud.get_student(db, student_id=student_id)
     if not db_student:
         raise HTTPException(status_code=404, detail="Student not found")
-    
+
     # Llama a la función del CRUD para manejar la lógica de la transacción
     updated_student = crud.create_student_transaction(db, db_student, transaction_data)
-    
+
     db.commit()
     db.refresh(updated_student)
     return updated_student
+
 
 @app.post("/api/students/{student_id}/documents/upload", response_model=schemas.Student)
 async def upload_documents(
@@ -148,7 +165,7 @@ async def upload_documents(
     files: List[UploadFile] = File(...),
     docType: Optional[str] = Form(None),
     metadata: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Endpoint para subir documentos. Maneja tanto la subida de archivos genéricos
@@ -159,7 +176,7 @@ async def upload_documents(
         raise HTTPException(status_code=404, detail="Student not found")
 
     # Si se sube un certificado de secundaria con metadatos, los procesa
-    if docType == 'Certificado de Secundaria' and metadata:
+    if docType == "Certificado de Secundaria" and metadata:
         try:
             meta_data = json.loads(metadata)
             cert_schema = schemas.CertificateCreate(**meta_data)
@@ -171,12 +188,12 @@ async def upload_documents(
     for file in files:
         # En una aplicación real, aquí guardarías el archivo en un almacenamiento en la nube (S3, etc.)
         # y obtendrías una URL. Para este proyecto, simulamos esto.
-        file_location = f"https://fake-storage.com/{db_student.curp}/{uuid.uuid4()}_{file.filename}"
-        
+        file_location = (
+            f"https://fake-storage.com/{db_student.curp}/{uuid.uuid4()}_{file.filename}"
+        )
+
         file_doc = schemas.DocumentationFileCreate(
-            name=file.filename,
-            url=file_location,
-            size=file.size
+            name=file.filename, url=file_location, size=file.size
         )
         crud.add_documentation_file(db, db_student, file_doc)
 
