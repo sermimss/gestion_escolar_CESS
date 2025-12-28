@@ -1,8 +1,9 @@
 import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 
 # Carga las variables de entorno desde un archivo .env
 # Esto es crucial para mantener las credenciales de la base de datos seguras.
@@ -20,7 +21,6 @@ if DATABASE_URL.startswith("sqlite"):
 
 engine = create_engine(DATABASE_URL, **engine_args)
 
-
 # Crea una clase SessionLocal. Las instancias de esta clase representarán
 # una sesión individual con la base de datos. Esto se usará en cada petición a la API.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -28,6 +28,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Crea una clase Base. Todos los modelos de la base de datos (como Student, Payment, etc.)
 # heredarán de esta clase para ser reconocidos por SQLAlchemy.
 Base = declarative_base()
+
 
 # Función de dependencia para FastAPI
 def get_db():
